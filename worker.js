@@ -1,5 +1,20 @@
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // Webhookni bir marta o'rnatish
+    if (url.pathname === "/setup") {
+      const result = await fetch(
+        `https://api.telegram.org/bot${env.BOT_TOKEN}/setWebhook?url=${encodeURIComponent(
+          `${url.origin}/`
+        )}`
+      );
+
+      return new Response(await result.text(), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     if (request.method !== "POST") {
       return new Response("Bot ishlayapti!", { status: 200 });
     }
@@ -21,10 +36,12 @@ export default {
           chatId,
           "Assalomu alaykum!\n\nBu murojaatlar boti.\nMurojaatingizni shu yerga yozib yuboring."
         );
-        return new Response("OK", { status: 200 });
+
+        return new Response("OK");
       }
 
-      const text = message.text || "Foydalanuvchi fayl yoki media yubordi.";
+      const text =
+        message.text || "Foydalanuvchi fayl yoki media yubordi.";
 
       const adminText =
         "📩 YANGI MUROJAAT\n\n" +
@@ -43,10 +60,10 @@ export default {
         "✅ Murojaatingiz qabul qilindi.\n\nMurojaatingiz mas'ul xodimga yuborildi."
       );
 
-      return new Response("OK", { status: 200 });
+      return new Response("OK");
     } catch (error) {
       console.log(error);
-      return new Response("OK", { status: 200 });
+      return new Response("OK");
     }
   }
 };
