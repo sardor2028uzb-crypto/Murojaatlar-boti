@@ -2,81 +2,162 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Webhookni bir marta o'rnatish
+    // ==============================
+    // WEBHOOKNI O'RNATISH
+    // ==============================
     if (url.pathname === "/setup") {
+      const webhookUrl = `${url.origin}/`;
+
       const result = await fetch(
-        `https://api.telegram.org/bot${env.BOT_TOKEN}/setWebhook?url=${encodeURIComponent(
-          `${url.origin}/`
-        )}`
+        `https://api.telegram.org/bot${env.BOT_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}`
       );
 
       return new Response(await result.text(), {
-        headers: { "Content-Type": "application/json" }
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
     }
 
+    // ==============================
+    // GET SO'ROVLAR
+    // ==============================
     if (request.method !== "POST") {
-      return new Response("Bot ishlayapti!", { status: 200 });
+      return new Response("JIDU Murojaatlar boti ishlayapti! ✅", {
+        status: 200
+      });
     }
 
     try {
+      // ==============================
+      // TELEGRAM UPDATE
+      // ==============================
       const update = await request.json();
       const message = update.message;
 
       if (!message) {
-        return new Response("OK", { status: 200 });
+        return new Response("OK", {
+          status: 200
+        });
       }
 
       const chatId = message.chat.id;
       const user = message.from;
 
+      // ==============================
+      // /START
+      // ==============================
       if (message.text === "/start") {
+        const startText =
+          "Assalomu alaykum! 👋\n\n" +
+          "Siz Jahon iqtisodiyoti va diplomatiya universitetining " +
+          "murojaatlar botiga tashrif buyurdingiz.\n\n" +
+          "📩 Ushbu bot orqali Universitetga murojaat, " +
+          "taklif yoki fikringizni yuborishingiz mumkin.\n\n" +
+          "Murojaatingiz mas’ul xodimga yetkaziladi.\n\n" +
+          "✍️ Murojaatingizni yuborish uchun murojaatingizni " +
+          "shu yerga yozib yuboring.";
+
         await sendMessage(
           env.BOT_TOKEN,
           chatId,
-          "Assalomu alaykum!\n\nBu murojaatlar boti.\nMurojaatingizni shu yerga yozib yuboring."
+          startText
         );
 
-        return new Response("OK");
+        return new Response("OK", {
+          status: 200
+        });
       }
 
+      // ==============================
+      // MUROJAAT MATNI
+      // ==============================
       const text =
-        message.text || "Foydalanuvchi fayl yoki media yubordi.";
+        message.text ||
+        "Foydalanuvchi fayl yoki media yubordi.";
 
+      // ==============================
+      // FOYDALANUVCHI MA'LUMOTLARI
+      // ==============================
+      const firstName = user.first_name || "";
+      const lastName = user.last_name || "";
+      const fullName = `${firstName} ${lastName}`.trim();
+
+      const username = user.username
+        ? `@${user.username}`
+        : "mavjud emas";
+
+      // ==============================
+      // ADMINGA YUBORILADIGAN XABAR
+      // ==============================
       const adminText =
         "📩 YANGI MUROJAAT\n\n" +
-        `👤 Foydalanuvchi: ${user.first_name || ""} ${user.last_name || ""}\n` +
-        `🆔 Telegram ID: ${user.id}\n` +
-        `🔗 Username: @${user.username || "mavjud emas"}\n\n` +
-        `📝 Murojaat:\n${text}`;
+        "👤 Foydalanuvchi: " +
+        `${fullName || "Noma'lum"}\n` +
+        "🆔 Telegram ID: " +
+        `${user.id}\n` +
+        "🔗 Username: " +
+        `${username}\n\n` +
+        "📝 MUROJAAT:\n" +
+        `${text}`;
 
+      // ==============================
+      // ADMINGA YUBORISH
+      // ==============================
       if (env.ADMIN_ID) {
-        await sendMessage(env.BOT_TOKEN, env.ADMIN_ID, adminText);
+        await sendMessage(
+          env.BOT_TOKEN,
+          env.ADMIN_ID,
+          adminText
+        );
       }
 
+      // ==============================
+      // FOYDALANUVCHIGA TASDIQ
+      // ==============================
       await sendMessage(
         env.BOT_TOKEN,
         chatId,
-        "✅ Murojaatingiz qabul qilindi.\n\nMurojaatingiz mas'ul xodimga yuborildi."
+        "✅ Murojaatingiz qabul qilindi.\n\n" +
+        "Murojaatingiz mas’ul xodimga yuborildi.\n\n" +
+        "📩 Zarur bo‘lsa, qo‘shimcha ma’lumot yuborishingiz mumkin."
       );
 
-      return new Response("OK");
+      return new Response("OK", {
+        status: 200
+      });
+
     } catch (error) {
-      console.log(error);
-      return new Response("OK");
+      console.log("Xatolik:", error);
+
+      return new Response("OK", {
+        status: 200
+      });
     }
   }
 };
 
+
+// ==========================================
+// TELEGRAM XABAR YUBORISH FUNKSIYASI
+// ==========================================
+
 async function sendMessage(token, chatId, text) {
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: text
-    })
-  });
+  const response = await fetch(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text
+      })
+    }
+  );
+
+  return response;
 }
