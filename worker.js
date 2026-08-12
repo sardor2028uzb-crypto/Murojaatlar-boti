@@ -23,9 +23,10 @@ export default {
     // GET SO'ROVLAR
     // ==============================
     if (request.method !== "POST") {
-      return new Response("JIDU Murojaatlar boti ishlayapti! ✅", {
-        status: 200
-      });
+      return new Response(
+        "JIDU Murojaatlar boti ishlayapti! ✅",
+        { status: 200 }
+      );
     }
 
     try {
@@ -36,9 +37,7 @@ export default {
       const message = update.message;
 
       if (!message) {
-        return new Response("OK", {
-          status: 200
-        });
+        return new Response("OK", { status: 200 });
       }
 
       const chatId = message.chat.id;
@@ -64,9 +63,7 @@ export default {
           startText
         );
 
-        return new Response("OK", {
-          status: 200
-        });
+        return new Response("OK", { status: 200 });
       }
 
       // ==============================
@@ -81,25 +78,48 @@ export default {
       // ==============================
       const firstName = user.first_name || "";
       const lastName = user.last_name || "";
-      const fullName = `${firstName} ${lastName}`.trim();
+
+      const fullName =
+        `${firstName} ${lastName}`.trim() || "Noma'lum";
 
       const username = user.username
         ? `@${user.username}`
         : "mavjud emas";
 
       // ==============================
-      // ADMINGA YUBORILADIGAN XABAR
+      // MUROJAATNI KV'GA SAQLASH
+      // ==============================
+      const appealId =
+        `appeal:${Date.now()}:${user.id}`;
+
+      const appealData = {
+        id: appealId,
+        telegram_id: user.id,
+        full_name: fullName,
+        username: username,
+        text: text,
+        created_at: new Date().toISOString()
+      };
+
+      await env.USER_DATA.put(
+        appealId,
+        JSON.stringify(appealData)
+      );
+
+      // ==============================
+      // ADMINGA XABAR
       // ==============================
       const adminText =
         "📩 YANGI MUROJAAT\n\n" +
         "👤 Foydalanuvchi: " +
-        `${fullName || "Noma'lum"}\n` +
+        `${fullName}\n` +
         "🆔 Telegram ID: " +
         `${user.id}\n` +
         "🔗 Username: " +
         `${username}\n\n` +
         "📝 MUROJAAT:\n" +
-        `${text}`;
+        `${text}\n\n` +
+        "💾 Murojaat bazaga saqlandi.";
 
       // ==============================
       // ADMINGA YUBORISH
@@ -119,27 +139,22 @@ export default {
         env.BOT_TOKEN,
         chatId,
         "✅ Murojaatingiz qabul qilindi.\n\n" +
-        "Murojaatingiz mas’ul xodimga yuborildi.\n\n" +
-        "📩 Zarur bo‘lsa, qo‘shimcha ma’lumot yuborishingiz mumkin."
+        "Murojaatingiz mas’ul xodimga yuborildi."
       );
 
-      return new Response("OK", {
-        status: 200
-      });
+      return new Response("OK", { status: 200 });
 
     } catch (error) {
       console.log("Xatolik:", error);
 
-      return new Response("OK", {
-        status: 200
-      });
+      return new Response("OK", { status: 200 });
     }
   }
 };
 
 
 // ==========================================
-// TELEGRAM XABAR YUBORISH FUNKSIYASI
+// TELEGRAM XABAR YUBORISH
 // ==========================================
 
 async function sendMessage(token, chatId, text) {
@@ -160,4 +175,4 @@ async function sendMessage(token, chatId, text) {
   );
 
   return response;
-}
+  }
